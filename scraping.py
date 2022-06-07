@@ -24,10 +24,12 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
-        "last_modified": dt.datetime.now()
+        "last_modified": dt.datetime.now(),
+        "hemispheres": mars_hemispheres_imgs(browser) # Deliverable 2 Module challenge
     }
     
     browser.quit()
+    #print(data)
     return data
 
 def mars_news(browser):
@@ -94,6 +96,69 @@ def mars_facts():
     
     #Convert dataframe into HTML format, add bootstrap
     return df.to_html(classes="table table-striped")
+
+def mars_hemispheres_imgs(browser):
+    # 1. Use browser to visit the URL 
+    url = 'https://marshemispheres.com/'
+    browser.visit(url)
+    
+    # 2. Create a list to hold the images and titles.
+    hemisphere_image_urls = []
+
+    html = browser.html
+    #image_urls = browser.find_by_tag('itemLink product-item')
+
+    html = browser.html
+    my_soup = soup(html, 'html.parser')
+    #img_soup
+
+    #img_url_rel = my_soup.find('a', class_='itemLink')
+    #img_url_rel = my_soup.find_all('a', class_='itemLink')
+    img_url_rel = my_soup.select('a', class_='itemLink product-item')
+
+    #print(img_url_rel)
+    #print(len(img_url_rel))
+
+    # 3. Write code to retrieve the image urls and titles for each hemisphere.
+    for ele in img_url_rel:
+        if len(ele.select('h3')) == 0:
+            continue
+        else:
+            html_doc = ele.select('h3')[0].get_text() # Titulo de la pagina donde esta la foto
+            if html_doc == "Back":
+                continue
+
+            url_to_get_info = url + ele.attrs['href']
+            #print(url_to_get_info)
+            hemisphere_image_urls.append(get_hdef_pic_info(url_to_get_info, browser, url))
+
+    return hemisphere_image_urls
+   
+# Support Function which received the URL where the info to get the hres pic is located
+def get_hdef_pic_info(source_url, browser, base_url):
+    img_url = ""
+    img_name = ""
+    
+    browser.visit(source_url)
+    html = browser.html
+    my_soup = soup(html, 'html.parser')
+    html_pieces = my_soup.select('li')
+    h2_tag = my_soup.find('h2', class_='title')
+    
+    # Getting the file title from the h2 tag
+    img_name = h2_tag.get_text() # Image name
+    
+    for piece in html_pieces:
+        #print("--- PIECE ---")
+        #print(piece)
+        a_tag = piece.find('a')
+        #print("--- TEXT ---")
+        if a_tag.get_text() == "Sample": # Nos interesa la iamgen con el texto Sample
+            img_url = base_url + a_tag.attrs['href']
+            #print(img_url)
+            
+    return { 'img_url':img_url,
+            'title': img_name }
 
 if __name__ == "__main__":
     print(scrape_all())
